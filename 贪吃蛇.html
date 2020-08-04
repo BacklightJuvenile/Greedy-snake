@@ -1,0 +1,1043 @@
+<!-- 这个男孩很懒，什么也没有留下~，只留下一堆代码 -->
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+    <title>欢迎来到小伟贪吃蛇世界</title>
+    <!-- ***************************************************CSS************************************************************ -->
+    <style>
+        *{
+			margin: 0;
+			padding: 0;
+			font-style: arial;
+        }
+        body{
+            background-color: blanchedalmond;
+        }
+		.wrapperUl{
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			border: 20px solid #ff0;
+			/* outline: 10px solid #0ff; */
+			border-radius: 20px;
+            background-color: rgb(255, 250, 204);
+            cursor: pointer;
+		}
+        .wrapperUl:hover{
+            border-color: aqua;
+        }
+		.moveWrapper{
+			display: inline-block;
+			width: 200px;
+			height: 200px;
+			/* border: 1px solid black; */
+			position: absolute;
+			right: 50px;
+			bottom: 10%;
+			transform: scale(0.9);
+		}
+		.move{
+			position: absolute;
+			width: 60px;
+			height: 60px;
+			font-size: 30px;
+			background-color: rgb(128, 240, 240);
+			color: #fff;
+			border-radius: 20%;
+		}
+		.move:hover{
+			background-color:  #fff;
+			color:rgb(128, 240, 240);
+		}
+		li{
+			list-style: none;
+			box-sizing: border-box;    /*特殊的盒模型*/
+			/* outline: 1px solid #0ff; */
+			/* border: 1px solid #0ff; */
+			float: left;
+			width: 20px;
+			height: 20px;
+			font-size: 1px;
+			/* background-color: #fff;  */
+			line-height: 20px;
+			text-align: center;
+			border-radius: 50%;
+            overflow: hidden;
+		}
+		.reload{
+			width: 100px;
+			height: 40px;
+			line-height: 30px;
+			text-align: center;
+			color: #f40;
+			font-size: 18px;
+			display: block;
+			margin-top: 20px;
+			margin-left: 60px;
+			border: 2px solid #f40;
+			border-radius: 15%;
+			/* font-weight: bold; */
+			background-color: #fff;
+		}
+		.reload:hover{
+			color: #fff;
+			background-color: #f40;
+			cursor: pointer;
+		}
+		.score{
+			height: 50px;
+			line-height: 50px;
+            text-align: left;
+            margin-top: -20px;
+			color: #00f;
+            font-size: 30px;
+            font-weight: bolder;
+            display: inline-block;
+            position: absolute;
+            top: 250px;
+            left: 40px;
+        }
+        .rule{
+            width: 20%;
+            height: 300px;
+            border: 10px solid #ff0;
+            border-radius: 40px;
+            padding: 10px;
+            background-color: #fff;
+            color: rgb(255, 116, 66);
+            font-size: 15px;
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            overflow: hidden;
+        }
+        .rule:hover{
+            background-color: rgb(255, 116, 66);
+            color: #fff;
+            border-color: aqua;
+        }
+
+        /* 放图片 */
+        .imageDiv{
+            position: absolute;
+            bottom: 100px;
+            left: 30px;
+            width: 25%;
+            /* height: 25%; */
+            border-radius: 30px;
+            border: 10px solid rgb(255, 255, 0);
+            overflow: hidden;
+            visibility: hidden;
+        }
+        .imageDiv:hover{
+            border: 10px solid rgb(0, 255, 255);
+        }
+        .image{/*大图*/
+            display: block;  /*去缝隙*/
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* 调整照片合适位置 */
+        /*用来选中蛇头*/
+        .img{
+            height: 100%;
+            /* width: 100%; */
+        }
+        /* 蛇头 */
+        .imgSmall{
+            height: 100%;
+            /* width: 100%; */
+        }
+    </style>
+</head>
+<!-- ****************************************************HTML*********************************************************** -->
+<body>
+	<ul class="wrapperUl"></ul>
+    <div class="score"></div>
+    <div class="rule"></div>
+    <div class="imageDiv"><img class = "image"></div>
+
+    <input type="button" value="重新开始" class="reload" onclick="location.reload()">
+    
+<!-- ****************************************************JavaScript*********************************************************** -->
+    <script type="text/javascript">
+
+    //入口参数
+        try{
+            /*	
+            ***   n       n*n游戏地图
+            ***   time    小蛇移动速度
+            ***   length  初始化身体长度
+            */
+            var n = 30;
+            var time = 250;
+            var length = 4;
+            gameStart(n, time, length);
+        }
+        catch(error){
+            alert('出错啦!');
+            console.log(error);
+        }
+
+        /*	
+        ***   n       n*n游戏地图
+        ***   time    小蛇移动速度
+        ***   length  初始化身体长度
+        */
+        function gameStart(n, time, length){
+
+            //color
+            var bodyColor = "rgb(0, 255, 0)";
+            var backColor = "rgb(255, 250, 204)";
+            var foodColor = "rgb(150, 255, 0)";	
+
+            //蛇头图片,网络图片
+            var imgUrl = "https://ss2.bdstatic.com/70cFvnSh_Q1YnxGkpoWK1HF6hhy/it/u=3549617443,2268008273&fm=26&gp=0.jpg";
+
+            //var key = true;
+            //加了上下左右四个移动锁
+            var keydown = true;
+            var keyup = true;
+            var keyleft = true;
+            var keyright = true;
+
+            //上下左右方向持续移动定时器
+            var timerDown = null;
+            var timerUp = null;
+            var timerLeft = null;
+            var timerRight = null;
+
+            var flag = false; //撞到身体标志
+
+            //创建游戏画格
+            var ul = document.getElementsByTagName('ul')[0];
+            ul.style.width = n * 20 + "px";
+            ul.style.height = n * 20 + "px";
+            ul.style.marginLeft = -0.5 * n * 20 + "px";
+            ul.style.marginTop = -0.5 * n * 20 + "px";
+
+            var li = new Array();
+            for(var i = 0; i < n; i ++){
+                li[i] = new Array();
+            }
+            
+            for(var i = 0; i < n; i ++){
+                for(var j = 0; j < n; j ++){
+                    li[i][j] = document.createElement('li');
+                    //li[i][j].innerText = i + " " + j;
+                    ul.appendChild(li[i][j]);
+                    //li[i][j].backgroundColor = backColor;
+                }
+            }
+
+            //食物坐标
+            var randomBodyX;
+            var randomBodyY;
+
+
+            //身体坐标
+            var numX = new Array();
+            var numY = new Array();
+            for(var i = 0; i < n; i ++){
+                numX[i] = 0;
+                numY[i] = 0;
+            }
+
+            //身体上加图文(小图)
+            function character(){
+                li[numX[length - 1]][numY[length - 1]].style.transform = "scale(1.3)";
+                li[numX[length - 1]][numY[length - 1]].innerHTML = "<img class = 'imgSmall' title = '❤' alt = '小'>";
+                var imageSmall = document.getElementsByTagName('img')[0];
+                imageSmall.src = imgUrl;
+                imageSmall.onclick = function(){//点小图放大图
+                    //console.log('12345');
+                    var imageDiv = document.getElementsByClassName("imageDiv")[0];
+                    imageDiv.src = imgUrl;
+                    imageDiv.style.visibility = "visible";
+                }
+
+                li[numX[length - 2]][numY[length - 2]].innerText = '小';
+                li[numX[length - 2]][numY[length - 2]].style.transform = "scale(1)";
+                li[numX[length - 3]][numY[length - 3]].innerText = '蛇';
+                li[numX[length - 3]][numY[length - 3]].style.transform = "scale(1)";
+            }
+            //大图
+            function bigImg(){
+                var imageBig = document.getElementsByClassName("image")[0];
+                imageBig.src = imgUrl;
+                imageBig.onclick = function(){
+                    var imageDiv = document.getElementsByClassName("imageDiv")[0];
+                    imageDiv.src = imgUrl;
+                    imageDiv.style.visibility = "hidden";
+                }
+            }
+            bigImg();
+
+
+            //身体
+            function body(){
+                var random = Math.floor(Math.random() * 4);
+                //console.log(random);
+                //随机生成头尾坐标
+                randomBodyX = Math.floor(Math.random()*(n - length * 2) + length);
+                randomBodyY = Math.floor(Math.random()*(n - length * 2) + length);
+                for(var i = length - 1; i >= 0; i --){
+                    if(random == 0){  //蛇头向右
+                        numX[i] = randomBodyX;
+                        numY[i] = randomBodyY --;
+                        keyleft = false;
+                    }
+                    else if(random == 1){  //蛇头向左
+                        numX[i] = randomBodyX;
+                        numY[i] = randomBodyY ++;
+                        keyright = false;
+                    }
+                    else if(random == 2){  //蛇头向下
+                        numX[i] = randomBodyX --;
+                        numY[i] = randomBodyY;
+                        keyup = false;
+                    }
+                    else{  //蛇头向上
+                        numX[i] = randomBodyX ++;
+                        numY[i] = randomBodyY;
+                        keydown = false;
+                    }
+                    li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                    // li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                    // li[numX[i]][numY[i]].style.backgroundColor = bodyColor;			
+                    li[numX[i]][numY[i]].innerText = '';  //清除
+                }
+                character();
+            }
+            body();
+
+            //游戏得分
+            var score = document.getElementsByClassName('score')[0];
+            var totalScore = 0;
+            score.innerText = "得分：0分";
+            var auto = false;
+            function getScore(){
+                //自动加分
+                if(typeof(increase) == "function"){
+                    if(auto == false){
+                        auto = true;
+                        var flag_auto = 0;
+                        //自动加分
+                        flag_auto = 1;
+                        increase();
+
+                        if(flag_auto == 1){
+                            //console.log("12345");
+                            return false;
+                        }
+                    }else{//已经开挂，仅限一次
+                        return false;
+                    }
+                }
+
+                //爆分首选
+                var flag = 0;
+                if(typeof(max) == "function"){
+                    flag = 1;
+                    totalScore += max();
+                    //console.log(totalScore);
+                    score.innerText = "得分：" + totalScore + "分";
+                    return false;
+                }
+
+                //正常
+                //console.log(totalScore);
+                totalScore += 100;
+                score.innerText = "得分：" + totalScore + "分";
+                return false;
+            }
+            
+            //食物位置
+            var randomFoodX;
+            var randomFoodY;
+            function food()
+            {
+                //在身体上的食物就重新换位
+                var count = 0;
+                while(1)
+                {
+                    randomFoodX = Math.floor(Math.random() * n);
+                    randomFoodY = Math.floor(Math.random() * n);
+                    console.log(randomFoodX + " " + randomFoodY);
+                    //console.log(li[randomFoodX][randomFoodY].style.backgroundColor);
+                    if(li[randomFoodX][randomFoodY].style.backgroundColor != bodyColor)		//判断是否在蛇身上
+                    {
+                        li[randomFoodX][randomFoodY].style.backgroundColor = foodColor;
+                        li[randomFoodX][randomFoodY].innerText = "❤";
+                        break;
+                    }
+                    count ++;
+                    if(count == 20)
+                    {
+                        gameOver();
+                    }
+                }
+            }
+            food();
+
+            //吃食物
+            //思路：运动方向上下一个坐标不离开地图，且是食物坐标
+            var pause = false;
+            function eat(num){
+                switch(num)
+                {
+                    case 1:{//上
+                        //console.log(numX[length - 1] - 1);
+                        //console.log(randomFoodX);
+                        if(numX[length - 1] - 1 >= 0 && numX[length - 1] - 1 == randomFoodX && numY[length - 1] == randomFoodY)
+                        {
+                            console.log('success!');
+                            length ++;
+                            numX[length - 1] = randomFoodX;
+                            numY[length - 1] = randomFoodY;
+                            li[numX[length - 1]][numY[length - 1]].style.backgroundColor = bodyColor;
+                            transform();
+
+                            getScore();
+                            food();
+                            return true;
+                        }
+                        //console.log(length);
+                        break;
+                    }
+                    case 2:{//下
+                        if(((numX[length - 1] + 1) <= (n - 1)) && numX[length - 1] + 1 == randomFoodX && numY[length - 1] == randomFoodY)
+                        {				
+                            console.log('success!');
+                            length ++;
+                            numX[length - 1] = randomFoodX;
+                            numY[length - 1] = randomFoodY;
+                            li[numX[length - 1]][numY[length - 1]].style.backgroundColor = bodyColor;
+                            transform();
+
+                            getScore();
+                            food();
+                            return true;
+                        }
+                        //console.log(length);
+                        break;
+                    }
+                    case 3:{//左
+                        if(((numY[length - 1] - 1) >= 0) && numY[length - 1] - 1 == randomFoodY && numX[length - 1] == randomFoodX)
+                        {
+                            console.log('success!');
+                            length ++;
+                            numX[length - 1] = randomFoodX;
+                            numY[length - 1] = randomFoodY;
+                            li[numX[length - 1]][numY[length - 1]].style.backgroundColor = bodyColor;
+                            transform();
+
+                            getScore();
+                            food();
+                            return true;
+                        }
+                        //console.log(length);
+                        break;
+                    }
+                    case 4:{//右
+                        if(((numY[length - 1] + 1) <= (n - 1)) && numY[length - 1] + 1 == randomFoodY && numX[length - 1] == randomFoodX)
+                        {				
+                            console.log('success!');
+                            length ++;
+                            numX[length - 1] = randomFoodX;
+                            numY[length - 1] = randomFoodY;
+                            li[numX[length - 1]][numY[length - 1]].style.backgroundColor = bodyColor;
+                            transform();
+
+                            getScore();
+                            food();
+                            return true;
+                        }
+                        //console.log(length);
+                        break;
+                    }
+                    default:
+                        break;
+                }
+            }
+
+            //吃东西和谐一点
+            function transform(){
+                li[numX[length - 1]][numY[length - 1]].style.transform = "scale(1.3)";
+                // li[numX[length - 1]][numY[length - 1]].style.color = "#000";
+                li[numX[length - 1]][numY[length - 1]].innerHTML = "<img class = 'img' title = '❤' alt = '小'>";
+                var img = document.getElementsByClassName('img')[0];
+                img.src = imgUrl;
+                //console.log(li[numX[length - 1]][numY[length - 1]].innerHTML);
+
+                li[numX[length - 2]][numY[length - 2]].style.transform = "scale(1)";
+                li[numX[length - 2]][numY[length - 2]].innerHTML = "小";
+                // li[numX[length - 2]][numY[length - 2]].style.color = "#424242";
+                li[numX[length - 3]][numY[length - 3]].innerHTML = "蛇";
+                // li[numX[length - 3]][numY[length - 3]].style.color = "#424242";
+                li[numX[length - 4]][numY[length - 4]].innerHTML = "<div></div>";
+                // li[numX[length - 4]][numY[length - 4]].style.color = "#424242";
+            }
+
+            //监听键盘控制移动
+            /*
+            *** 思路：上、下移动，则锁定上下键，左、右移动，则锁定左右键，设置定时器自动移动，移动过程调用判断 吃食物和是否死亡
+            *** 移动思路：砍尾加头，身体坐标数组变换，重新加字
+            */
+            document.addEventListener('keydown', press, false);
+            function press(e) {
+                if(e.keyCode == 40 && keydown){//-------------------------------------------------------------下
+                    //上下按键失效
+                    keyup = false;
+                    keydown = false;
+                    keyleft = true;
+                    keyright = true;
+                    //清除其他方向移动
+                    clearTimer();
+
+                    //向下移动
+                    timerDown = setInterval(function(){
+                        pause = eat(2);
+                        flag = die(2);
+                        if(pause){
+                            return false;  //结束本次
+                        }
+                        if(numX[length - 1] >= n - 1 || flag){
+                            clearInterval(timerDown);
+                            gameOver(flag);
+                            return false;
+                        }
+                        
+                        //去除尾巴变透明
+                        li[numX[0]][numY[0]].style.backgroundColor = "transparent";
+                        //li[numX[0]][numY[0]].style.opacity = "0";
+
+                        //身体坐标移动
+                        for(var i = 0; i < length - 1; i ++){
+                            numX[i] = numX[i + 1];
+                            numY[i] = numY[i + 1];
+                            li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                            li[numX[i]][numY[i]].innerText = '';  //清除
+                        }
+                        //头部加1，并给个标志
+                        numX[length - 1] = numX[length - 1] + 1;
+                        character();
+
+                        li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                    },time)
+                }else if(e.keyCode == 38 && keyup){//------------------------------------------------------上
+                    keyup = false;
+                    keydown = false;
+                    keyleft = true;
+                    keyright = true;
+                    clearTimer();
+
+                    timerUp = setInterval(function(){
+                        pause = eat(1);
+                        flag = die(1);
+                        if(pause){
+                            return false;
+                        }
+                        if(numX[length - 1] <= 0 || flag){
+                            clearInterval(timerUp);
+                            //console.log(flag);
+                            gameOver(flag);
+                            return false;
+                        }
+                        li[numX[0]][numY[0]].style.backgroundColor = "transparent";
+                        for(var i = 0; i < length - 1; i ++){
+                            numX[i] = numX[i + 1];
+                            numY[i] = numY[i + 1];
+                            li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                            li[numX[i]][numY[i]].innerText = '';
+                        }
+                        numX[length - 1] = numX[length - 1] - 1;
+                        character();
+
+                        li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                    },time)
+                }else if(e.keyCode == 37 && keyleft){//-----------------------------------------------左
+                    keyup = true;
+                    keydown = true;
+                    keyleft = false;
+                    keyright = false;
+                    clearTimer();
+
+                    timerLeft = setInterval(function(){
+                        pause = eat(3);
+                        flag = die(3);
+                        if(pause){
+                            return false;  //结束本次
+                        }
+                        if(numY[length - 1] <= 0 || flag){
+                            clearInterval(timerLeft);
+                            gameOver(flag);
+                            return false;
+                        }
+                        li[numX[0]][numY[0]].style.backgroundColor = "transparent";
+                        for(var i = 0; i < length - 1; i ++){
+                            numX[i] = numX[i + 1];
+                            numY[i] = numY[i + 1];
+                            li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                            li[numX[i]][numY[i]].innerText = '';
+                        }
+                        numY[length - 1] = numY[length - 1] - 1;
+                        character();
+
+                        li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                    },time)
+                }else if(e.keyCode == 39 && keyright){//--------------------------------------------右
+                    keyup = true;
+                    keydown = true;
+                    keyleft = false;
+                    keyright = false;
+                    clearTimer();
+
+                    timerRight = setInterval(function(){
+                        pause = eat(4);
+                        flag = die(4);
+                        if(pause){
+                            return false;  //结束本次
+                        }
+                        if(numY[length - 1] >= n - 1 || flag){
+                            clearInterval(timerRight);
+                            gameOver(flag);
+                            return false;
+                        }
+                        li[numX[0]][numY[0]].style.backgroundColor = "transparent";
+                        for(var i = 0; i < length - 1; i ++){
+                            numX[i] = numX[i + 1];
+                            numY[i] = numY[i + 1];
+                            li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                            li[numX[i]][numY[i]].innerText = '';
+                        }
+                        numY[length - 1] = numY[length - 1] + 1;
+                        character();
+
+                        li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                    },time)
+                }
+            }
+
+            //撞到身体
+            //思路：离边还有一格距离，且下一个格子是身体的颜色（设在定时器里可以延迟一格移动的时间）
+            function die(num){
+                //自由撞身体
+                var flag = 0;
+                if(typeof(through) == "function"){
+                    flag = through();
+                }
+                if(flag == 1){
+                    return false;
+                }
+
+                switch(num){
+                    case 1:{//上
+                        if(numX[length - 1] - 1 >= 0 && li[numX[length - 1] - 1][numY[length - 1]].style.backgroundColor == bodyColor){
+                            return true;
+                        }
+                        break;
+                    }
+                    case 2:{//下
+                        if(numX[length - 1] + 1 <= n - 1 && li[numX[length - 1] + 1][numY[length - 1]].style.backgroundColor == bodyColor){
+                            return true;
+                        }
+                        break;
+                    }
+                    case 3:{//左
+                        if(numY[length - 1] - 1 >= 0 && li[numX[length - 1]][numY[length - 1] - 1].style.backgroundColor == bodyColor){
+                            return true;
+                        }
+                        break;
+                    }
+                    case 4:{//右
+                        if(numY[length - 1] + 1 <= n - 1 && li[numX[length - 1]][numY[length - 1] + 1].style.backgroundColor == bodyColor){
+                            return true;
+                        }
+                        break;
+                    }
+                    default:{
+                        break;
+                    }
+                }
+            }
+
+            //清除其他方向移动
+            function clearTimer(){
+                if(timerDown){
+                    clearInterval(timerDown);
+                    timerDown = null;
+                    //console.log('down');
+                }
+                if(timerUp){
+                    clearInterval(timerUp);
+                    timerUp = null;
+                    //console.log('up');
+                }
+                if(timerLeft){
+                    clearInterval(timerLeft);
+                    timerLeft = null;
+                    //console.log('left');
+                }
+                if(timerRight){
+                    clearInterval(timerRight);
+                    timerRight = null;
+                    //console.log('right');
+                }
+            }
+
+            //游戏结束
+            function gameOver(num){	
+
+                //死后复活
+                var flag = false;
+                if(typeof(Death) == "function")
+                {
+                    //console.log(typeof(Death));
+                    flag = Death();
+                    keyup = flag;
+                    keydown = flag;
+                    keyleft = flag;
+                    keyright = flag;
+                }
+                if(flag == true){
+                    return false;
+                }
+
+                if(num == true){
+                    alert('小蛇把自己绕糊涂了');
+                }else{
+                    alert('小蛇撞到墙啦');
+                }
+                if(auto){
+                    location.reload();
+                }	
+                clearTimer();
+                keyup = false;
+                keydown = false;
+                keyleft = false;
+                keyright = false;
+
+                
+                return false;		
+            }
+
+            function file(filename){
+                try{
+                    var script = document.createElement('script');
+                    script.type = "text/javascript";
+                    script.src = filename;
+                    document.body.appendChild(script);
+                }
+                catch(error){
+                    console.log(error);
+                }
+            }
+            
+            //开挂入口
+            file('throughBody.js');
+            file('noDeath.js');
+            file('scoreMax.js');
+            file('autoIncrease.js');
+
+
+            function buttonMove(){
+                var input = [];
+                var div = document.createElement('div');
+                input[0] = document.createElement('input');
+                input[1] = document.createElement('input');
+                input[2] = document.createElement('input');
+                input[3] = document.createElement('input');
+            
+                for(i = 0; i < 4; i ++){
+                    input[i].type = "button";
+                    input[i].className = "move";
+                }
+                input[0].value = "上";
+                input[1].value = "下";
+                input[2].value = "左";
+                input[3].value = "右";
+            
+                document.body.appendChild(div);
+                div.appendChild(input[0]);
+                div.appendChild(input[1]);
+                div.appendChild(input[2]);
+                div.appendChild(input[3]);
+                
+                input[0].style.top = "0";
+                input[0].style.left = "50%";
+                input[0].style.marginLeft = "-30px";
+            
+                input[1].style.bottom = "0";
+                input[1].style.left = "50%";
+                input[1].style.marginLeft = "-30px";
+            
+                input[2].style.top = "50%";
+                input[2].style.left = "0";
+                input[2].style.marginTop = "-30px";
+            
+                input[3].style.top = "50%";
+                input[3].style.right = "0";
+                input[3].style.marginTop = "-30px";
+            
+                div.className = "moveWrapper";
+
+                if(typeof(buttonMove) == "function"){
+                    input[0].onclick = function(){
+                        //console.log('上');
+                        if(keyup){//------------------------------------------------------上
+                            keyup = false;
+                            keydown = false;
+                            keyleft = true;
+                            keyright = true;
+                            clearTimer();
+                        
+                            timerUp = setInterval(function(){
+                                pause = eat(1);
+                                flag = die(1);
+                                if(pause){
+                                    return false;
+                                }
+                                if(numX[length - 1] <= 0 || flag){
+                                    clearInterval(timerUp);
+                                    //console.log(flag);
+                                    gameOver(flag);
+                                    return false;
+                                }
+                                li[numX[0]][numY[0]].style.backgroundColor = backColor;
+                                for(var i = 0; i < length - 1; i ++){
+                                    numX[i] = numX[i + 1];
+                                    numY[i] = numY[i + 1];
+                                    li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                                    li[numX[i]][numY[i]].innerText = '';
+                                }
+                                numX[length - 1] = numX[length - 1] - 1;
+                                character();
+                        
+                                li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                            },time)
+                        }
+                    }
+                    input[1].onclick = function(){
+                        //console.log('下');
+                        if(keydown){//-------------------------------------------------------------下
+                            //上下按键失效
+                            keyup = false;
+                            keydown = false;
+                            keyleft = true;
+                            keyright = true;
+                            //清除其他方向移动
+                            clearTimer();
+                
+                            //向下移动
+                            timerDown = setInterval(function(){
+                                pause = eat(2);
+                                flag = die(2);
+                                if(pause){
+                                    return false;  //结束本次
+                                }
+                                if(numX[length - 1] >= n - 1 || flag){
+                                    clearInterval(timerDown);
+                                    gameOver(flag);
+                                    return false;
+                                }
+                                
+                                //去除尾巴
+                                li[numX[0]][numY[0]].style.backgroundColor = backColor;
+                
+                                //身体坐标移动
+                                for(var i = 0; i < length - 1; i ++){
+                                    numX[i] = numX[i + 1];
+                                    numY[i] = numY[i + 1];
+                                    li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                                    li[numX[i]][numY[i]].innerText = '';  //清除
+                                }
+                                //头部加1，并给个标志
+                                numX[length - 1] = numX[length - 1] + 1;
+                                character();
+                
+                                li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                            },time)
+                        }
+                    }
+
+                    input[2].onclick = function(){
+                        //console.log('左');
+                        if(keyleft){//-----------------------------------------------左
+                            keyup = true;
+                            keydown = true;
+                            keyleft = false;
+                            keyright = false;
+                            clearTimer();
+                
+                            timerLeft = setInterval(function(){
+                                pause = eat(3);
+                                flag = die(3);
+                                if(pause){
+                                    return false;  //结束本次
+                                }
+                                if(numY[length - 1] <= 0 || flag){
+                                    clearInterval(timerLeft);
+                                    gameOver(flag);
+                                    return false;
+                                }
+                                li[numX[0]][numY[0]].style.backgroundColor = backColor;
+                                for(var i = 0; i < length - 1; i ++){
+                                    numX[i] = numX[i + 1];
+                                    numY[i] = numY[i + 1];
+                                    li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                                    li[numX[i]][numY[i]].innerText = '';
+                                }
+                                numY[length - 1] = numY[length - 1] - 1;
+                                character();
+                
+                                li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                            },time)
+                        }
+                    }
+                    
+                    input[3].onclick = function(){
+                        //console.log('右');
+                        if(keyright){//--------------------------------------------右
+                            keyup = true;
+                            keydown = true;
+                            keyleft = false;
+                            keyright = false;
+                            clearTimer();
+                
+                            timerRight = setInterval(function(){
+                                pause = eat(4);
+                                flag = die(4);
+                                if(pause){
+                                    return false;  //结束本次
+                                }
+                                if(numY[length - 1] >= n - 1 || flag){
+                                    clearInterval(timerRight);
+                                    gameOver(flag);
+                                    return false;
+                                }
+                                li[numX[0]][numY[0]].style.backgroundColor = backColor;
+                                for(var i = 0; i < length - 1; i ++){
+                                    numX[i] = numX[i + 1];
+                                    numY[i] = numY[i + 1];
+                                    li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                                    li[numX[i]][numY[i]].innerText = '';
+                                }
+                                numY[length - 1] = numY[length - 1] + 1;
+                                character();
+                
+                                li[numX[i]][numY[i]].style.backgroundColor = bodyColor;
+                            },time)
+                        }
+                    }
+                }
+            }
+
+            //控制按键的显示
+            var count_open = 0;
+            function buttonOpen(){
+                var openClose = document.createElement('input');
+                openClose.type = "button";
+                openClose.value = "开关按钮";
+                openClose.className = "reload";
+                document.body.appendChild(openClose);
+                buttonMove();
+
+                var div = document.getElementsByClassName("moveWrapper")[0];
+                div.style.visibility = "hidden";
+
+                openClose.onclick = function(){
+                    //console.log(count_open);
+                    if(count_open % 2 == 0){
+                        div.style.visibility = "visible";
+                    }
+                    else{
+                        div.style.visibility = "hidden";
+                    }
+                    count_open ++;
+                }
+            }
+            buttonOpen();
+
+            //游戏规则
+            function gameRule(){
+                var div = document.getElementsByClassName('rule')[0];
+                document.body.appendChild(div);
+                var str = "欢迎来到贪吃蛇世界" + "\n\n"
+                    + "1、按上下左右任意键开始" + "\n"
+                    + "2、按上下左右键控制小蛇移动方向" + "\n"
+                    + "3、按开关按钮调出模拟键盘" + "\n"
+                    + "4、按重新开始按钮重开游戏" + "\n"
+                    + "5、小蛇吃一个球得100分" + "\n"
+                    + "5、小蛇撞到墙或者身体结束游戏" + "\n"
+                    + "6、点击生命可以复活一次" + "\n\n"
+                    + "祝您游戏愉快！" + "\n";
+
+                div.innerText = str;
+            }
+            gameRule();
+
+            //小蛇有多条命
+            var relive_count = 2;
+            function relive(){
+                var str = ["❤", "❤❤", "❤❤❤"];
+                var live = document.createElement('input');
+                live.type = "button";
+                live.value = "生命：" + str[relive_count - 1] ;
+                live.style.width = "100px";
+                //live.style.width = "120px";
+                live.className = "reload";
+                document.body.appendChild(live);
+
+                live.onclick = function(){
+                    if(keyup == false && keydown == false && keyleft == false && keyright == false){//只有死后才可以复活
+                        relive_count --;
+                        if(relive_count <= 0){
+                            relive_count = 1;
+                            alert('小蛇不能再复活了哦');
+                            return false;
+                        }
+                        // console.log((relive_count - 1) + " " + str[relive_count - 1]);
+                        live.value = "生命：" + str[relive_count - 1] ;
+                        if(relive_count > 0)
+                        {
+                            keyup = true;
+                            keydown = true;
+                            keyleft = true;
+                            keyright = true;
+                        }
+                    }
+                }
+            }
+            relive();
+
+            //改变游戏背景颜色
+            function reverse(){
+                //console.log("12345");
+                var count = 0;
+                var rule = document.getElementsByClassName('rule')[0];
+                rule.onclick = function(){
+                    count ++;
+                    //console.log(count);
+                    if(count % 4 == 1){
+                        ul.style.backgroundColor = "#fff";
+                    }else if(count % 4 == 2){
+                        ul.style.backgroundColor = "rgb(190, 190, 190)";
+                    }else if(count % 4 == 3){
+                        ul.style.backgroundColor = "#000";
+                    }else{
+                        ul.style.backgroundColor = "rgb(255, 250, 204)";
+                    }
+                }
+            }
+            reverse();
+
+            document.oncontextmenu = function(){
+　　            return false;
+            }
+        }
+    </script>
+</body>
+</html>
