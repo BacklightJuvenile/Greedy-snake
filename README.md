@@ -1,7 +1,7 @@
 # Greedy-snake
 ### 项目描述
 
-这是一个基于html、css、JavaScript开发的贪吃蛇小游
+这是一个基于html、css、JavaScript开发的贪吃蛇小游戏
 
 ### 项目目录
 
